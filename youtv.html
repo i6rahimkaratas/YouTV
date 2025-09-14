@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini YouTube TV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .main-player {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .channel-sidebar {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .player-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .current-channel {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .current-channel h2 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .channel-info {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .sidebar-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .sidebar-header h3 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .add-channel-form {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .add-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .channel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .channel-item {
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid transparent;
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .channel-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .channel-item.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(10px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .channel-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-btn:hover {
+            background: #dc3545;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .channel-item.active .delete-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .channel-item.active .delete-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Scrollbar styling */
+        .channel-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .channel-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .channel-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 3px;
+        }
+
+        .channel-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+                padding: 10px;
+                gap: 15px;
+            }
+            
+            .channel-sidebar {
+                max-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-player">
+            <div class="current-channel">
+                <h2 id="currentChannelName">Mini YouTube TV</h2>
+                <div class="channel-info">
+                    <p id="currentChannelInfo">Başlamak için sağdan bir kanal seçin veya yeni kanal ekleyin</p>
+                </div>
+            </div>
+            <div class="player-wrapper" id="playerWrapper">
+                <div class="empty-state">
+                    <h3>🎬 Hoş Geldiniz!</h3>
+                    <p>Canlı yayınları izlemek için kanal ekleyin ve başlayın</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="channel-sidebar">
+            <div class="sidebar-header">
+                <h3>📺 Kanallar</h3>
+            </div>
+
+            <div class="add-channel-form">
+                <div class="form-group">
+                    <label for="channelName">Kanal Adı</label>
+                    <input type="text" id="channelName" placeholder="Örn: CNN Türk">
+                </div>
+                <div class="form-group">
+                    <label for="channelUrl">YouTube Canlı Yayın URL'si</label>
+                    <input type="text" id="channelUrl" placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+                <button class="add-btn" onclick="addChannel()">+ Kanal Ekle</button>
+            </div>
+
+            <div class="channel-list" id="channelList">
+                <!-- Kanallar buraya eklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let channels = JSON.parse(localStorage.getItem('youtubeTvChannels')) || [];
+        let currentChannel = null;
+
+        function renderChannels() {
+            const channelList = document.getElementById('channelList');
+            
+            if (channels.length === 0) {
+                channelList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📺 Henüz kanal yok</h3>
+                        <p>Yukarıdaki formu kullanarak ilk kanalınızı ekleyin</p>
+                    </div>
+                `;
+                return;
+            }
+
+            channelList.innerHTML = channels.map((channel, index) => `
+                <div class="channel-item ${currentChannel === index ? 'active' : ''}" onclick="selectChannel(${index})">
+                    <div style="display: flex; align-items: center;">
+                        <div class="status-indicator"></div>
+                        <span class="channel-name">${channel.name}</span>
+                    </div>
+                    <button class="delete-btn" onclick="deleteChannel(event, ${index})" title="Kanalı Sil">×</button>
+                </div>
+            `).join('');
+        }
+
+        function addChannel() {
+            const nameInput = document.getElementById('channelName');
+            const urlInput = document.getElementById('channelUrl');
+            
+            const name = nameInput.value.trim();
+            const url = urlInput.value.trim();
+            
+            if (!name || !url) {
+                alert('Lütfen kanal adı ve URL girin');
+                return;
+            }
+            
+            // YouTube URL'sini embed formatına çevir
+            let embedUrl = convertToEmbedUrl(url);
+            if (!embedUrl) {
+                alert('Geçerli bir YouTube URL\'si girin');
+                return;
+            }
+            
+            channels.push({
+                name: name,
+                url: url,
+                embedUrl: embedUrl
+            });
+            
+            localStorage.setItem('youtubeTvChannels', JSON.stringify(channels));
+            
+            nameInput.value = '';
+            urlInput.value = '';
+            
+            renderChannels();
+        }
+
+        function convertToEmbedUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                
+                if (urlObj.hostname.includes('youtube.com')) {
+                    if (urlObj.pathname === '/watch') {
+                        const videoId = urlObj.searchParams.get('v');
+                        if (videoId) {
+                            return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+                        }
+                    } else if (urlObj.pathname.startsWith('/embed/')) {
+                        return url.includes('autoplay=1') ? url : `${url}?autoplay=1&mute=0`;
+                    }
+                } else if (urlObj.hostname.includes('youtu.be')) {
+                    const videoId = urlObj.pathname.substring(1);
+                    if (videoId) {
+                        return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+                    }
+                }
+                
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function selectChannel(index) {
+            currentChannel = index;
+            const channel = channels[index];
+            
+            document.getElementById('currentChannelName').textContent = channel.name;
+            document.getElementById('currentChannelInfo').textContent = '🔴 Canlı Yayın';
+            
+            const playerWrapper = document.getElementById('playerWrapper');
+            playerWrapper.innerHTML = `<iframe src="${channel.embedUrl}" allowfullscreen></iframe>`;
+            
+            renderChannels();
+        }
+
+        function deleteChannel(event, index) {
+            event.stopPropagation();
+            
+            if (confirm(`"${channels[index].name}" kanalını silmek istediğinizden emin misiniz?`)) {
+                channels.splice(index, 1);
+                localStorage.setItem('youtubeTvChannels', JSON.stringify(channels));
+                
+                if (currentChannel === index) {
+                    currentChannel = null;
+                    document.getElementById('currentChannelName').textContent = 'Mini YouTube TV';
+                    document.getElementById('currentChannelInfo').textContent = 'Başlamak için sağdan bir kanal seçin veya yeni kanal ekleyin';
+                    document.getElementById('playerWrapper').innerHTML = `
+                        <div class="empty-state">
+                            <h3>🎬 Hoş Geldiniz!</h3>
+                            <p>Canlı yayınları izlemek için kanal ekleyin ve başlayın</p>
+                        </div>
+                    `;
+                } else if (currentChannel > index) {
+                    currentChannel--;
+                }
+                
+                renderChannels();
+            }
+        }
+
+        // Enter tuşu ile kanal ekleme
+        document.getElementById('channelUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addChannel();
+            }
+        });
+
+        document.getElementById('channelName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('channelUrl').focus();
+            }
+        });
+
+        // Sayfa yüklendiğinde kanalları göster
+        renderChannels();
+    </script>
+</body>
+</html>
